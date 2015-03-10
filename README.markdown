@@ -1,6 +1,14 @@
-# Feed-the-bird
+# feed-the-bird
 
 Make an RSS feed from your Twitter Home Timeline
+
+# Prerequisites
+
+- Python libraries:
+    - oauth2
+    - feedparser
+    - feedgen
+- [Your Twitter access token](https://dev.twitter.com/oauth/overview/application-owner-access-tokens)
 
 # Usage
 
