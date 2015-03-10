@@ -6,6 +6,7 @@ import feedparser
 import datetime
 from dateutil import parser
 from feedgen.feed import FeedGenerator
+import subprocess
 
 
 def pull_tweets(consumer_key, consumer_secret, access_token,
@@ -53,7 +54,7 @@ def pull_tweets(consumer_key, consumer_secret, access_token,
             break
     return all_data
 
-def make_feed(RSS_FILE, twitter_account):
+def make_feed(RSS_FILE, twitter_account, get_images):
     try:
         feed = feedparser.parse(RSS_FILE)
         since_id = feed.entries[0]['id'].split('/')[-1]
@@ -66,9 +67,8 @@ def make_feed(RSS_FILE, twitter_account):
     fg = FeedGenerator()
     if 'list_slug' in twitter_account:
         feed_url = 'https://twitter.com/%s/lists/%s' % (twitter_account['screen_name'], twitter_account['list_slug'])
-        fg.description(
-            'Twitter home timeline for list %s ' + twitter_account['list_slug'])
-            fg.title('Twitter home timeline for %s' % twitter_account['list_slug'])
+        fg.description('Twitter home timeline for list %s ' + twitter_account['list_slug'])
+        fg.title('Twitter home timeline for %s' % twitter_account['list_slug'])
     else:
         feed_url = 'https://twitter.com/' + twitter_account['screen_name']
         fg.description(
@@ -102,11 +102,21 @@ def make_feed(RSS_FILE, twitter_account):
         content += '<a href="https://twitter.com/intent/favorite?tweet_id=%s">Favorite</a><br /><br />' % t[
             'id_str']
         if 'entities' in t:
+            if ('media' in t['entities']) and get_images:
+                for u in t['entities']['media']:
+                    if u['type'] == 'photo':
+                        curl = subprocess.Popen(['curl', u['media_url']], stdout = subprocess.PIPE)
+                        mogrify = subprocess.Popen(['mogrify', '-format', 'jpeg', '-', '-'] , stdout = subprocess.PIPE, stdin=curl.stdout)
+                        jp2a = subprocess.Popen(['jp2a', '--html', '--width=120', '-'], stdout = subprocess.PIPE, stdin=mogrify.stdout)
+                        img = jp2a.communicate()[0]
+                        content += img
+
             if 'urls' in t['entities']:
                 for u in t['entities']['urls']:
                     fe.link({'href': u['expanded_url'], 'rel': 'related'})
                     content += '\n<a href="%s">%s</a><br />\n' % (
                         u['expanded_url'], u['expanded_url'])
+
 
         fe.description(content)
     fg.rss_file(RSS_FILE)
@@ -117,4 +127,5 @@ if __name__ == '__main__':
     for c in CONFIG['accounts']:
         RSS_FILE = c['rss_file']
         twitter_account = c['twitter']
-        make_feed(RSS_FILE, twitter_account)
+        get_images = c['get_images'] if 'get_images' in c else False
+        make_feed(RSS_FILE, twitter_account, get_images)
