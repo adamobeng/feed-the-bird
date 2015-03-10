@@ -6,6 +6,7 @@ Make an RSS feed from your Twitter Home Timeline
 
 1. Create a file at '~/.ftb.yaml' which looks like:
 
+``` yaml
 - {
     twitter: {
         screen_name : 'YOUR_SCREEN_NAME',
@@ -16,5 +17,6 @@ Make an RSS feed from your Twitter Home Timeline
     },
     rss_file : '~/path/to/rss.xml'
 }
+```
 
 2. Run ./ftb.py
