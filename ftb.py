@@ -61,7 +61,7 @@ def make_feed(RSS_FILE, twitter_account):
     fg = FeedGenerator()
     fg.id('https://twitter.com/' + twitter_account['screen_name'])
     fg.link({'href': 'https://twitter.com/' +
-             CONFIG['twitter'][0]['screen_name'], 'rel': 'alternate'})
+             twitter_account['screen_name'], 'rel': 'alternate'})
     fg.description(
         'Twitter home timeline for ' + twitter_account['screen_name'])
 
@@ -102,8 +102,8 @@ def make_feed(RSS_FILE, twitter_account):
 
 if __name__ == '__main__':
     CONFIG = yaml.load(open('config.yaml'))
-    print 'config:', CONFIG.keys()
-    RSS_FILE = CONFIG['rss_file']
 
-    twitter_account = CONFIG['twitter'][0]
-    make_feed(RSS_FILE, twitter_account)
+    for c in CONFIG:
+        RSS_FILE = c['rss_file']
+        twitter_account = c['twitter']
+        make_feed(RSS_FILE, twitter_account)
