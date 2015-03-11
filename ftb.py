@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#ll!/usr/bin/env python
 import yaml
 import json
 import oauth2 as oauth
@@ -7,6 +7,7 @@ import datetime
 from dateutil import parser
 from feedgen.feed import FeedGenerator
 import subprocess
+import os.path
 
 
 def pull_tweets(consumer_key, consumer_secret, access_token,
@@ -30,7 +31,6 @@ def pull_tweets(consumer_key, consumer_secret, access_token,
     if since_id is not None:
         timeline_endpoint += '&since_id=%s' % since_id
 
-    all_data = []
 
     response, data = client.request(timeline_endpoint)
     data = json.loads(data)
@@ -39,12 +39,15 @@ def pull_tweets(consumer_key, consumer_secret, access_token,
         raise RuntimeError(data)
     ##
 
+    all_data = []
+    all_data.extend(data)
+
     max_id = None
     for i in range(max_iter):
         if min(t['id'] for t in data) == max_id:
             break
         max_id = min(t['id'] for t in data)
-        print 'Fetching page', i, max_id
+        print 'Fetching page', i, 'before', max_id, list(t['created_at'] for t in data if t['id'] == max_id)[0]
         response, data = client.request(
             timeline_endpoint + '&max_id=%s' % max_id)
         data = json.loads(data)
@@ -58,7 +61,7 @@ def make_feed(RSS_FILE, twitter_account, get_images):
     try:
         feed = feedparser.parse(RSS_FILE)
         since_id = feed.entries[0]['id'].split('/')[-1]
-        print 'Getting tweets since', since_id
+        print 'Getting tweets since', since_id, feed.entries[0]['published']
     except Exception as e:
         print e
         since_id = None
@@ -81,6 +84,7 @@ def make_feed(RSS_FILE, twitter_account, get_images):
     for t in tweets:
         tweet_url = 'https://twitter.com/%s/status/%s' % (
             t['user']['id_str'], t['id_str'])
+        print 'Got tweet', tweet_url, t['created_at']
         fe = fg.add_entry()
         fe.summary(t['text'])
         fe.title('@' + t['user']['screen_name'] + ' (%s)' %
@@ -107,7 +111,7 @@ def make_feed(RSS_FILE, twitter_account, get_images):
                     if u['type'] == 'photo':
                         curl = subprocess.Popen(['curl', u['media_url']], stdout = subprocess.PIPE)
                         mogrify = subprocess.Popen(['mogrify', '-format', 'jpeg', '-', '-'] , stdout = subprocess.PIPE, stdin=curl.stdout)
-                        jp2a = subprocess.Popen(['jp2a', '--html', '--width=120', '-'], stdout = subprocess.PIPE, stdin=mogrify.stdout)
+                        jp2a = subprocess.Popen(['jp2a', '-i', '--html', '--width=120', '-'], stdout = subprocess.PIPE, stdin=mogrify.stdout)
                         img = jp2a.communicate()[0]
                         content += img
 
@@ -122,7 +126,7 @@ def make_feed(RSS_FILE, twitter_account, get_images):
     fg.rss_file(RSS_FILE)
 
 if __name__ == '__main__':
-    CONFIG = yaml.load(open('config.yaml'))
+    CONFIG = yaml.load(open(os.path.expanduser('~/.ftb-config.yaml')))
 
     for c in CONFIG['accounts']:
         RSS_FILE = c['rss_file']
