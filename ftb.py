@@ -37,6 +37,8 @@ def pull_tweets(consumer_key, consumer_secret, access_token,
 
     if 'errors' in data:
         raise RuntimeError(data)
+    if data == []:
+        return data
     ##
 
     all_data = []
