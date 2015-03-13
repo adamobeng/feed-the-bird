@@ -114,6 +114,9 @@ def make_feed(RSS_FILE, twitter_account, get_images):
                         jp2a = subprocess.Popen(['jp2a', '-i', '--html', '--width=120', '-'], stdout = subprocess.PIPE, stdin=mogrify.stdout)
                         img = jp2a.communicate()[0]
                         content += img
+                        content += '\n<a href="%s">%s</a><br />\n' % (
+                        u['media_url'], u['media_url'])
+
 
             if 'urls' in t['entities']:
                 for u in t['entities']['urls']:
