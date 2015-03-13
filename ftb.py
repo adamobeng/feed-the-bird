@@ -10,15 +10,19 @@ import subprocess
 import os.path
 import requests
 
-URL_SHORTENERS = ('bit.ly', 'tinyurl.com', 'goo.gl', 'owl.ly', 'deck.ly', 'su.pr', 't.co')
+URL_SHORTENERS = ('bit.ly', 'tinyurl.com', 'goo.gl', 'owl.ly', 'deck.ly', 'su.pr', 't.co', 'dlvr.it')
 
 def unshorten(url):
     if not any(s in url for s in URL_SHORTENERS):
         return url
-    r = requests.head(url)
-    if str(r.status_code)[0] == '3':
-        return r.headers['location']
-    else:
+    try:
+        r = requests.head(url)
+        if str(r.status_code)[0] == '3':
+            return r.headers['location']
+        else:
+            return url
+    except Exception as e:
+        print url, e
         return url
 
 def pull_tweets(consumer_key, consumer_secret, access_token,
