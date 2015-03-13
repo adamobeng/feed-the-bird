@@ -130,7 +130,7 @@ def make_feed(RSS_FILE, twitter_account, get_images):
         content = t['text']
         content += '<br /><br /><a href="https://twitter.com/intent/retweet?tweet_id=%s">Retweet</a>' % t[
             'id_str']
-        content += '<a href="https://twitter.com/intent/tweet?in_reply_to=%s%26text=%s">Reply</a>' % (
+        content += '<a href="https://twitter.com/intent/tweet?in_reply_to=%s%%26text=%s">Reply</a>' % (
             t['id_str'], '%40' + t['user']['screen_name'])
         content += '<a href="https://twitter.com/intent/favorite?tweet_id=%s">Favorite</a><br /><br />' % t[
             'id_str']
