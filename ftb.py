@@ -26,8 +26,8 @@ def unshorten(url):
         return url
 
 def pull_tweets(consumer_key, consumer_secret, access_token,
-                access_token_secret, screen_name, list_slug=None, count=200, since_id=None,
-                max_iter=15):
+                access_token_secret, screen_name, list_slug=None, since_id=None,
+                max_iter=15, mentions=False):
     # http://stackoverflow.com/questions/6399978/getting-started-with-twitter-
     # oauth2-python
     consumer = oauth.Consumer(key=consumer_key, secret=consumer_secret)
@@ -37,11 +37,13 @@ def pull_tweets(consumer_key, consumer_secret, access_token,
     if list_slug is not None:
         timeline_endpoint = (
             'https://api.twitter.com/1.1/lists/statuses.json'
-            '?slug=%s&owner_screen_name=%s&count=%s' % (list_slug, screen_name, count))
+            '?slug=%s&owner_screen_name=%s&count=200' % (list_slug, screen_name))
+    elif mentions:
+        timeline_endpoint = 'https://api.twitter.com/1.1/statuses/mentions_timeline.json?count=200&contributor_details=true&include_entities=true'
     else:
         timeline_endpoint = (
             'https://api.twitter.com/1.1/statuses/home_timeline.json'
-            '?contributor_details=True&count=%s' % (count))
+            '?contributor_details=True&count=200')
 
     if since_id is not None:
         timeline_endpoint += '&since_id=%s' % since_id
@@ -53,7 +55,8 @@ def pull_tweets(consumer_key, consumer_secret, access_token,
     if 'errors' in data:
         raise RuntimeError(data)
     if data == []:
-        raise RuntimeError('No tweets returned')
+        print 'No tweets returned'
+        return []
     ##
 
     all_data = []
@@ -84,11 +87,20 @@ def make_feed(RSS_FILE, twitter_account, get_images):
         since_id = None
 
     tweets = pull_tweets(since_id=since_id, **twitter_account)
+    if tweets==[]: return
+
     fg = FeedGenerator()
     if 'list_slug' in twitter_account:
         feed_url = 'https://twitter.com/%s/lists/%s' % (twitter_account['screen_name'], twitter_account['list_slug'])
         fg.description('Twitter home timeline for list %s ' + twitter_account['list_slug'])
         fg.title('Twitter home timeline for %s' % twitter_account['list_slug'])
+    elif 'mentions' in twitter_account:
+        if twitter_account['mentions']:
+            feed_url = 'https://twitter.com/' + twitter_account['screen_name']
+            fg.description(
+                'Twitter mentions for ' + twitter_account['screen_name'])
+            fg.title('Twitter mentions for %s' % twitter_account['screen_name'])
+
     else:
         feed_url = 'https://twitter.com/' + twitter_account['screen_name']
         fg.description(
@@ -118,7 +130,7 @@ def make_feed(RSS_FILE, twitter_account, get_images):
         content = t['text']
         content += '<br /><br /><a href="https://twitter.com/intent/retweet?tweet_id=%s">Retweet</a>' % t[
             'id_str']
-        content += '<a href="https://twitter.com/intent/tweet?in-reply-to=%s&text=%s">Reply</a>' % (
+        content += '<a href="https://twitter.com/intent/tweet?in_reply_to=%s%26text=%s">Reply</a>' % (
             t['id_str'], '%40' + t['user']['screen_name'])
         content += '<a href="https://twitter.com/intent/favorite?tweet_id=%s">Favorite</a><br /><br />' % t[
             'id_str']
