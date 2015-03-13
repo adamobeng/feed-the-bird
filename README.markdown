@@ -8,6 +8,7 @@ Make an RSS feed from your Twitter Home Timeline
     - oauth2
     - feedparser
     - feedgen
+    - requests
 - [Your Twitter access token](https://dev.twitter.com/oauth/overview/application-owner-access-tokens)
 
 # Usage

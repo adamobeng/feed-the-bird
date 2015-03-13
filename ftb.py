@@ -8,11 +8,25 @@ from dateutil import parser
 from feedgen.feed import FeedGenerator
 import subprocess
 import os.path
+import requests
+
+URL_SHORTENERS = (
+    'bit.ly', 'tinyurl.com', 'goo.gl', 'owl.ly', 'deck.ly', 'su.pr', 't.co')
+
+
+def unshorten(url):
+    if not any(s in url for s in URL_SHORTENERS):
+        return url
+    r = requests.head(url)
+    if str(r.status_code)[0] == '3':
+        return r.headers['location']
+    else:
+        return url
 
 
 def pull_tweets(consumer_key, consumer_secret, access_token,
-                access_token_secret, screen_name, list_slug=None, count=200, since_id=None,
-                max_iter=15):
+                access_token_secret, screen_name, list_slug=None, count=200,
+                since_id=None, max_iter=15):
     # http://stackoverflow.com/questions/6399978/getting-started-with-twitter-
     # oauth2-python
     consumer = oauth.Consumer(key=consumer_key, secret=consumer_secret)
@@ -22,7 +36,9 @@ def pull_tweets(consumer_key, consumer_secret, access_token,
     if list_slug is not None:
         timeline_endpoint = (
             'https://api.twitter.com/1.1/lists/statuses.json'
-            '?slug=%s&owner_screen_name=%s&count=%s' % (list_slug, screen_name, count))
+            '?slug=%s&owner_screen_name=%s&count=%s' %
+            (list_slug, screen_name, count)
+            )
     else:
         timeline_endpoint = (
             'https://api.twitter.com/1.1/statuses/home_timeline.json'
@@ -30,7 +46,6 @@ def pull_tweets(consumer_key, consumer_secret, access_token,
 
     if since_id is not None:
         timeline_endpoint += '&since_id=%s' % since_id
-
 
     response, data = client.request(timeline_endpoint)
     data = json.loads(data)
@@ -59,6 +74,7 @@ def pull_tweets(consumer_key, consumer_secret, access_token,
             break
     return all_data
 
+
 def make_feed(RSS_FILE, twitter_account, get_images):
     try:
         feed = feedparser.parse(RSS_FILE)
@@ -71,14 +87,17 @@ def make_feed(RSS_FILE, twitter_account, get_images):
     tweets = pull_tweets(since_id=since_id, **twitter_account)
     fg = FeedGenerator()
     if 'list_slug' in twitter_account:
-        feed_url = 'https://twitter.com/%s/lists/%s' % (twitter_account['screen_name'], twitter_account['list_slug'])
-        fg.description('Twitter home timeline for list %s ' + twitter_account['list_slug'])
+        feed_url = 'https://twitter.com/%s/lists/%s' % (
+            twitter_account['screen_name'], twitter_account['list_slug'])
+        fg.description(
+            'Twitter home timeline for list %s ' + twitter_account['list_slug'])
         fg.title('Twitter home timeline for %s' % twitter_account['list_slug'])
     else:
         feed_url = 'https://twitter.com/' + twitter_account['screen_name']
         fg.description(
             'Twitter home timeline for ' + twitter_account['screen_name'])
-        fg.title('Twitter home timeline for %s' % twitter_account['screen_name'])
+        fg.title('Twitter home timeline for %s' %
+                 twitter_account['screen_name'])
 
     fg.id(feed_url)
     fg.link({'href': feed_url, 'rel': 'alternate'})
@@ -111,22 +130,24 @@ def make_feed(RSS_FILE, twitter_account, get_images):
             if ('media' in t['entities']) and get_images:
                 for u in t['entities']['media']:
                     if u['type'] == 'photo':
-                        curl = subprocess.Popen(['curl', u['media_url']], stdout = subprocess.PIPE)
-                        mogrify = subprocess.Popen(['mogrify', '-format', 'jpeg', '-', '-'] , stdout = subprocess.PIPE, stdin=curl.stdout)
-                        jp2a = subprocess.Popen(['jp2a', '-i', '--html', '--width=120', '-'], stdout = subprocess.PIPE, stdin=mogrify.stdout)
+                        curl = subprocess.Popen(
+                            ['curl', u['media_url']], stdout=subprocess.PIPE)
+                        mogrify = subprocess.Popen(
+                            ['mogrify', '-format', 'jpeg', '-', '-'], stdout=subprocess.PIPE, stdin=curl.stdout)
+                        jp2a = subprocess.Popen(
+                            ['jp2a', '-i', '--html', '--width=120', '-'], stdout=subprocess.PIPE, stdin=mogrify.stdout)
                         img = jp2a.communicate()[0]
                         content += img
                         content += '\n<a href="%s">%s</a><br />\n' % (
-                        u['media_url'], u['media_url'])
-
+                            u['media_url'], u['media_url'])
 
             if 'urls' in t['entities']:
                 for u in t['entities']['urls']:
-                    fe.link({'href': u['expanded_url'], 'rel': 'related'})
-                    content += '\n<a href="%s">%s</a><br />\n' % (
-                        u['display_url'], u['display_url'])
-                    content = content.replace(u['url'], u['display_url'])
-
+                    current_url = unshorten(u['expanded_url']))
+                        fe.link({'href': current_url, 'rel': 'related'})
+                        content += '\n<a href="%s">%s</a><br />\n' % (
+                        current_url, current_url)
+                            content=content.replace(u['url'], current_url
 
         fe.description(content)
     fg.rss_file(RSS_FILE)
