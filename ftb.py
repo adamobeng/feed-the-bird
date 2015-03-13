@@ -122,7 +122,8 @@ def make_feed(RSS_FILE, twitter_account, get_images):
                 for u in t['entities']['urls']:
                     fe.link({'href': u['expanded_url'], 'rel': 'related'})
                     content += '\n<a href="%s">%s</a><br />\n' % (
-                        u['expanded_url'], u['expanded_url'])
+                        u['display_url'], u['display_url'])
+                    content = content.replace(u['url'], u['display_url'])
 
 
         fe.description(content)
