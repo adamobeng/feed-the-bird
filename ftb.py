@@ -155,7 +155,7 @@ def make_feed(RSS_FILE, twitter_account, get_images):
 
         fe.title(title)
         fe.description(content)
-    fg.rss_file(RSS_FILE)
+    return fg
 
 if __name__ == '__main__':
     CONFIG = yaml.load(open(os.path.expanduser('~/.ftb-config.yaml')))
@@ -164,4 +164,24 @@ if __name__ == '__main__':
         RSS_FILE = c['rss_file']
         twitter_account = c['twitter']
         get_images = c['get_images'] if 'get_images' in c else False
-        make_feed(RSS_FILE, twitter_account, get_images)
+        fg = make_feed(RSS_FILE, twitter_account, get_images)
+        if fg:
+            new_len = len(feedparser.parse(fg.rss_str()))
+        else:
+            new_len=0
+            print new_len, 'new entries'
+            break
+
+        old_feed = feedparser.parse(RSS_FILE)
+        print len(old_feed.entries), 'old entries'
+        for e in old_feed.entries:
+            fe = fg.add_entry()
+            fe.published(e['published'])
+            fe.author(e['author_detail'])
+            fe.id(e['id'])
+            fe.title(e['title'])
+            fe.description(e['summary'])
+            for l in e['links']:
+                fe.link(l)
+
+        fg.rss_file(RSS_FILE)
