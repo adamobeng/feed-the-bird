@@ -115,9 +115,7 @@ def make_feed(RSS_FILE, twitter_account, get_images):
             t['user']['id_str'], t['id_str'])
         print 'Got tweet', tweet_url, t['created_at']
         fe = fg.add_entry()
-        fe.summary(t['text'])
-        fe.title('@' + t['user']['screen_name'] + ' (%s)' %
-                 t['user']['name'] + ': ' + t['text'])
+        title = '@' + t['user']['screen_name'] + ' (%s)' % t['user']['name'] + ': ' + t['text']
         fe.published(t['created_at'])
         fe.author({
             'name': t['user']['name'],
@@ -153,8 +151,10 @@ def make_feed(RSS_FILE, twitter_account, get_images):
                     current_url = unshorten(u['expanded_url'])
                     fe.link({'href': current_url, 'rel': 'related'})
                     content += '\n<a href="%s">%s</a><br />\n' % (current_url, current_url)
-                    content = content.replace(u['url'],current_url )
+                    content = content.replace(u['url'],current_url)
+                    title = title.replace(u['url'],current_url)
 
+        fe.title(title)
         fe.description(content)
     fg.rss_file(RSS_FILE)
 
