@@ -9,17 +9,20 @@ from feedgen.feed import FeedGenerator
 import subprocess
 import os.path
 import requests
-
-URL_SHORTENERS = ('bit.ly', 'tinyurl.com', 'goo.gl', 'owl.ly', 'deck.ly', 'su.pr', 't.co', 'dlvr.it')
+import tldextract
 
 def unshorten(url):
-    if not any(s in url for s in URL_SHORTENERS):
+    print url,
+    if len(tldextract.extract(url).suffix) > 2:
+        print 'Nope'
         return url
     try:
         r = requests.head(url)
         if str(r.status_code)[0] == '3':
+            print r.headers['location']
             return r.headers['location']
         else:
+            print 'Nope'
             return url
     except Exception as e:
         print url, e
