@@ -12,17 +12,13 @@ import requests
 import tldextract
 
 def unshorten(url):
-    print url,
     if len(tldextract.extract(url).suffix) > 2:
-        print 'Nope'
         return url
     try:
         r = requests.head(url)
         if str(r.status_code)[0] == '3':
-            print r.headers['location']
             return r.headers['location']
         else:
-            print 'Nope'
             return url
     except Exception as e:
         print url, e
