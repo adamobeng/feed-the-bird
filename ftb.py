@@ -177,7 +177,10 @@ if __name__ == '__main__':
         for e in old_feed.entries:
             fe = fg.add_entry()
             fe.published(e['published'])
-            fe.author(e['author_detail'])
+            if 'author_detail' in e:
+                fe.author(e['author_detail'])
+            else:
+                fe.author({'name':''})
             fe.id(e['id'])
             fe.title(e['title'])
             fe.description(e['summary'])
